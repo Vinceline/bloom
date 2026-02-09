@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  bloom-ios
-//
-//  Created by Vinceline Bertrand on 2/8/26.
-//
-
 import SwiftUI
 import Combine
 
@@ -35,28 +28,36 @@ struct ContentView: View {
                 if profile.role == .mom {
                     // Mom's tabs
                     MindView(service: service)
+                        .padding(.bottom, 100) // Add padding for tab bar
                         .tag(0)
                     
                     BodyView(service: service)
+                        .padding(.bottom, 100)
                         .tag(1)
                     
                     BabyView(service: service)
+                        .padding(.bottom, 100)
                         .tag(2)
                     
                     InsightsView()
+                        .padding(.bottom, 100)
                         .tag(3)
                 } else {
                     // Partner's tabs
                     MomView()
+                        .padding(.bottom, 100)
                         .tag(0)
                     
                     BabyView(service: service)
+                        .padding(.bottom, 100)
                         .tag(1)
                     
                     PartnerView(service: service)
+                        .padding(.bottom, 100)
                         .tag(2)
                     
                     InsightsView()
+                        .padding(.bottom, 100)
                         .tag(3)
                 }
             }
