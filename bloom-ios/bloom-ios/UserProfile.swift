@@ -62,14 +62,42 @@ class UserProfile: ObservableObject {
     }
     
     func contextForServer() -> [String: Any] {
-        [
-            "role": role.rawValue,
-            "delivery_type": deliveryType.rawValue,
-            "weeks_postpartum": weeksPostpartum,
+        // Convert recovery stage to string format backend expects
+        let recoveryStageString: String = {
+            switch recoveryStage {
+            case .immediate: return "week_1"
+            case .early: return "week_2"
+            case .active: return "weeks_3_6"
+            case .extended: return "weeks_6_plus"
+            }
+        }()
+        
+        // Build mood history array for backend
+        let moodHistoryArray = moodHistory.suffix(10).map { entry in
+            [
+                "mood": entry.mood.rawValue,
+                "note": entry.note,
+                "timestamp": ISO8601DateFormatter().string(from: entry.timestamp)
+            ]
+        }
+        
+        // Build baby data dictionary
+        let babyDataDict: [String: Any] = [
             "baby_name": babyData.babyName,
             "baby_age_weeks": babyData.babyAgeWeeks,
-            "recent_mood": moodHistory.last?.mood.rawValue ?? "none",
-            "sleep_quality": averageSleepQuality
+            "last_feed_time": "\(Int(babyData.lastFeedHoursAgo)) hours ago",
+            "feed_duration_minutes": 20, // Default, could track this
+            "sleep_status": babyData.currentStatus,
+            "last_nap_time": "1 hour ago" // Default, could track this
+        ]
+        
+        return [
+            "user_role": role.rawValue,
+            "delivery_type": deliveryType.rawValue,
+            "recovery_stage": recoveryStageString,
+            "baby_name": babyData.babyName,
+            "mood_history": moodHistoryArray,
+            "baby_data": babyDataDict
         ]
     }
     
@@ -265,4 +293,3 @@ class UserProfile: ObservableObject {
         ].sorted { $0.date > $1.date }
     }
 }
-

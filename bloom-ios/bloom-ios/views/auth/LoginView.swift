@@ -26,11 +26,12 @@ struct LoginView: View {
                     
                     // Logo
                     VStack(spacing: 12) {
-                        Image(systemName: "leaf.fill")
+                        Image("bloom-logo-alpha")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 80, height: 80)
-                            .foregroundColor(Color(red: 0.53, green: 0.81, blue: 0.98))
+                            .frame(width: 120, height: 120)
+                     
+
                         
                         Text("Bloom")
                             .font(.system(size: 36, weight: .bold, design: .serif))
@@ -51,7 +52,7 @@ struct LoginView: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(Color(.sRGB, red: 0.6, green: 0.6, blue: 0.65))
                             
-                            TextField("mom@bloom.com or dad@bloom.com", text: $email)
+                            TextField("email@bloom.com", text: $email)
                                 .font(.system(size: 15))
                                 .foregroundColor(.white)
                                 .textContentType(.emailAddress)
@@ -137,23 +138,6 @@ struct LoginView: View {
                     }
                     .padding(.horizontal, 20)
                     
-                    // Demo credentials hint
-                    VStack(spacing: 12) {
-                        Text("Demo Credentials")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color(.sRGB, red: 0.5, green: 0.5, blue: 0.55))
-                        
-                        VStack(spacing: 8) {
-                            credentialHint(role: "Mom", email: "mom@bloom.com")
-                            credentialHint(role: "Dad", email: "dad@bloom.com")
-                            
-                            Text("Password: password")
-                                .font(.system(size: 11))
-                                .foregroundColor(Color(.sRGB, red: 0.45, green: 0.45, blue: 0.5))
-                        }
-                    }
-                    
-                    Spacer()
                 }
             }
         }

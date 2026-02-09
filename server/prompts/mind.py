@@ -79,7 +79,7 @@ Respond with ONLY a JSON object:
 }}"""
 
 
-ddef breathing_exercise(user_message: str, context: dict) -> str:
+def breathing_exercise(user_message: str, context: dict) -> str:
     return f"""You are Bloom's Mind Agent — a calming support companion for a postpartum mother.
 
 The mother is feeling stressed, anxious, or overwhelmed, or has asked for help calming down.
