@@ -39,7 +39,13 @@ class MindAgent:
 
         # Call Gemini
         try:
-            raw = gemini_client.call([prompt])
+            raw, confidence = gemini_client.call_with_confidence([prompt])
+            context.confidence_log.append({
+            "agent": "mind",
+            "action": action,
+            "confidence": confidence
+            })
+
         except RuntimeError as e:
             context.error = str(e)
             return

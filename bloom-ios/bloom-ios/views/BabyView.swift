@@ -4,8 +4,6 @@
 //
 //  Created by Vinceline Bertrand on 2/1/26.
 //
-
-
 import SwiftUI
 
 struct BabyView: View {
@@ -21,8 +19,13 @@ struct BabyView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+
                 // Header
-                header("Hi, \(babyName)'s parent 👶", icon: "heart.fill", color: Color(red: 0.2, green: 0.7, blue: 0.5))
+                header(
+                    "Hi, \(babyName)'s parent 👶",
+                    icon: "heart.fill",
+                    color: Color(red: 0.2, green: 0.7, blue: 0.5)
+                )
 
                 // Cue reading — the main feature
                 cueReadingSection()
@@ -33,14 +36,17 @@ struct BabyView: View {
                 // Free text question
                 freeQuestionSection()
 
-                // Loading
+                // 🔹 AGENT STATUS (ADDED)
                 if service.isLoading {
-                    loadingIndicator()
+                    agentStatus()
                 }
 
                 // Response
-                if let response = service.response, response.pillar == .baby {
-                    ResponseCard(response: response)
+                if let response = service.response,
+                   service.routedPillar == .baby {
+                    ResponseCard(
+                        response: response
+                    )
                 }
 
                 // Error
@@ -54,11 +60,46 @@ struct BabyView: View {
         }
         .background(Color.black)
         .sheet(isPresented: $showPhotoPicker) {
-            PhotoPicker(selectedImage: $selectedImage, sourceType: .photoLibrary)
+            PhotoPicker(
+                selectedImage: $selectedImage,
+                sourceType: .photoLibrary
+            )
         }
         .onChange(of: selectedImage) { newImage in
-            if newImage != nil { submitCueReading() }
+            if newImage != nil {
+                submitCueReading()
+            }
         }
+    }
+
+    // MARK: - Agent Status (NEW)
+
+    private func agentStatus() -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ProgressView()
+                .progressViewStyle(
+                    CircularProgressViewStyle(
+                        tint: Color(red: 0.53, green: 0.81, blue: 0.98)
+                    )
+                )
+
+            if let status = service.statusMessage {
+                Text(status)
+                    .font(.system(size: 12))
+                    .foregroundColor(
+                        Color(.sRGB, red: 0.6, green: 0.6, blue: 0.65)
+                    )
+            }
+
+            if let pillar = service.routedPillar {
+                Text("Routed to \(pillar.rawValue.capitalized) agent")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(
+                        Color(.sRGB, red: 0.5, green: 0.5, blue: 0.55)
+                    )
+            }
+        }
+        .padding(.top, 4)
     }
 
     // MARK: - Cue Reading
@@ -68,9 +109,12 @@ struct BabyView: View {
             Text("Read \(babyName)'s cues")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.white)
+
             Text("Upload a photo and Bloom will help you understand what \(babyName) needs")
                 .font(.system(size: 12))
-                .foregroundColor(Color(.sRGB, red: 0.5, green: 0.5, blue: 0.55))
+                .foregroundColor(
+                    Color(.sRGB, red: 0.5, green: 0.5, blue: 0.55)
+                )
 
             if let img = selectedImage {
                 HStack(spacing: 12) {
@@ -80,40 +124,65 @@ struct BabyView: View {
                         .frame(width: 72, height: 72)
                         .clipped()
                         .cornerRadius(10)
+
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Photo selected")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.white)
+
                         Text("Tap to change")
                             .font(.system(size: 11))
-                            .foregroundColor(Color(red: 0.2, green: 0.7, blue: 0.5))
+                            .foregroundColor(
+                                Color(red: 0.2, green: 0.7, blue: 0.5)
+                            )
                     }
+
                     Spacer()
                 }
                 .padding(12)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
-                        .stroke(Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24), lineWidth: 1)
+                        .stroke(
+                            Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24),
+                            lineWidth: 1
+                        )
                 )
-                .onTapGesture { showPhotoPicker = true }
+                .onTapGesture {
+                    guard !service.isLoading else { return }
+                    showPhotoPicker = true
+                }
             } else {
-                Button { showPhotoPicker = true } label: {
+                Button {
+                    guard !service.isLoading else { return }
+                    showPhotoPicker = true
+                } label: {
                     HStack(spacing: 10) {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 18))
                         Text("Upload a photo of \(babyName)")
                             .font(.system(size: 14, weight: .medium))
                     }
-                    .foregroundColor(Color(red: 0.2, green: 0.7, blue: 0.5))
+                    .foregroundColor(
+                        Color(red: 0.2, green: 0.7, blue: 0.5)
+                    )
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color(red: 0.04, green: 0.15, blue: 0.1))
-                            .stroke(Color(red: 0.2, green: 0.7, blue: 0.5, opacity: 0.3), lineWidth: 1)
+                            .stroke(
+                                Color(
+                                    red: 0.2,
+                                    green: 0.7,
+                                    blue: 0.5,
+                                    opacity: 0.3
+                                ),
+                                lineWidth: 1
+                            )
                     )
                 }
+                .disabled(service.isLoading)
             }
         }
     }
@@ -127,14 +196,21 @@ struct BabyView: View {
                 .foregroundColor(.white)
 
             HStack(spacing: 10) {
-                quickButton("🍼 Feeding", message: "I have a question about feeding \(babyName)")
-                quickButton("😴 Sleep", message: "I have a question about \(babyName)'s sleep")
+                quickButton(
+                    "🍼 Feeding",
+                    message: "I have a question about feeding \(babyName)"
+                )
+                quickButton(
+                    "😴 Sleep",
+                    message: "I have a question about \(babyName)'s sleep"
+                )
             }
         }
     }
 
     private func quickButton(_ label: String, message: String) -> some View {
         Button {
+            guard !service.isLoading else { return }
             service.request(
                 message: message,
                 pillar: .baby,
@@ -149,9 +225,13 @@ struct BabyView: View {
                 .background(
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
-                        .stroke(Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24), lineWidth: 1)
+                        .stroke(
+                            Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24),
+                            lineWidth: 1
+                        )
                 )
         }
+        .disabled(service.isLoading)
     }
 
     // MARK: - Free Question
@@ -162,20 +242,28 @@ struct BabyView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.white)
 
-            TextField("What's on your mind?", text: $questionText, axis: .vertical)
-                .font(.system(size: 14))
-                .foregroundColor(.white)
-                .lineLimit(1...3)
-                .padding(14)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
-                        .stroke(Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24), lineWidth: 1)
-                )
-                .colorScheme(.dark)
+            TextField(
+                "What's on your mind?",
+                text: $questionText,
+                axis: .vertical
+            )
+            .font(.system(size: 14))
+            .foregroundColor(.white)
+            .lineLimit(1...3)
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
+                    .stroke(
+                        Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24),
+                        lineWidth: 1
+                    )
+            )
+            .colorScheme(.dark)
+            .disabled(service.isLoading)
 
             if !questionText.isEmpty {
-                submitButton(disabled: false) {
+                submitButton(disabled: service.isLoading) {
                     service.request(
                         message: questionText,
                         pillar: .baby,
@@ -190,7 +278,10 @@ struct BabyView: View {
     // MARK: - Actions
 
     private func submitCueReading() {
-        guard let image = selectedImage else { return }
+        guard let image = selectedImage,
+              !service.isLoading
+        else { return }
+
         service.request(
             message: "Please read \(babyName)'s cues in this photo",
             pillar: .baby,

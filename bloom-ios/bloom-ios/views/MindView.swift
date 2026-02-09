@@ -5,7 +5,6 @@
 //  Created by Vinceline Bertrand on 2/1/26.
 //
 
-
 import SwiftUI
 import Combine
 
@@ -19,8 +18,13 @@ struct MindView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+
                 // Header
-                header("How are you feeling?", icon: "brain.fill", color: Color(red: 0.65, green: 0.45, blue: 0.95))
+                header(
+                    "How are you feeling?",
+                    icon: "brain.fill",
+                    color: Color(red: 0.65, green: 0.45, blue: 0.95)
+                )
 
                 // Mood grid
                 moodGrid()
@@ -30,18 +34,21 @@ struct MindView: View {
 
                 // Submit
                 submitButton(
-                    disabled: selectedMood == nil,
+                    disabled: selectedMood == nil || service.isLoading,
                     action: submitMood
                 )
 
-                // Loading
+                // 🔹 AGENT STATUS (ADDED)
                 if service.isLoading {
-                    loadingIndicator()
+                    agentStatus()
                 }
 
                 // Response
-                if let response = service.response, response.pillar == .mind {
-                    ResponseCard(response: response)
+                if let response = service.response,
+                   service.routedPillar == .mind {
+                    ResponseCard(
+                        response: response
+                    )
                 }
 
                 // Error
@@ -56,14 +63,47 @@ struct MindView: View {
         .background(Color.black)
     }
 
+    // MARK: - Agent Status (NEW)
+
+    private func agentStatus() -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ProgressView()
+                .progressViewStyle(
+                    CircularProgressViewStyle(
+                        tint: Color(red: 0.53, green: 0.81, blue: 0.98)
+                    )
+                )
+
+            if let status = service.statusMessage {
+                Text(status)
+                    .font(.system(size: 12))
+                    .foregroundColor(
+                        Color(.sRGB, red: 0.6, green: 0.6, blue: 0.65)
+                    )
+            }
+
+            if let pillar = service.routedPillar {
+                Text("Routed to \(pillar.rawValue.capitalized) agent")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(
+                        Color(.sRGB, red: 0.5, green: 0.5, blue: 0.55)
+                    )
+            }
+        }
+        .padding(.top, 4)
+    }
+
     // MARK: - Mood Grid
 
     private func moodGrid() -> some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible(), spacing: 10),
-            GridItem(.flexible(), spacing: 10),
-            GridItem(.flexible(), spacing: 10)
-        ], spacing: 10) {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(), spacing: 10),
+                GridItem(.flexible(), spacing: 10),
+                GridItem(.flexible(), spacing: 10)
+            ],
+            spacing: 10
+        ) {
             ForEach(Mood.allCases, id: \.self) { mood in
                 moodCell(mood)
             }
@@ -74,23 +114,39 @@ struct MindView: View {
         let selected = selectedMood == mood
 
         return Button {
+            guard !service.isLoading else { return }
             selectedMood = mood
         } label: {
             VStack(spacing: 6) {
                 Text(mood.emoji)
                     .font(.system(size: 28))
+
                 Text(mood.rawValue.capitalized)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(selected ? .white : Color(.sRGB, red: 0.6, green: 0.6, blue: 0.6))
+                    .foregroundColor(
+                        selected
+                            ? .white
+                            : Color(.sRGB, red: 0.6, green: 0.6, blue: 0.6)
+                    )
             }
             .frame(maxWidth: .infinity)
             .frame(height: 88)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(selected ? mood.color.opacity(0.2) : Color(red: 0.08, green: 0.08, blue: 0.12))
-                    .stroke(selected ? mood.color : Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24), lineWidth: selected ? 1.8 : 1)
+                    .fill(
+                        selected
+                            ? mood.color.opacity(0.2)
+                            : Color(red: 0.08, green: 0.08, blue: 0.12)
+                    )
+                    .stroke(
+                        selected
+                            ? mood.color
+                            : Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24),
+                        lineWidth: selected ? 1.8 : 1
+                    )
             )
         }
+        .disabled(service.isLoading)
     }
 
     // MARK: - Note
@@ -99,7 +155,9 @@ struct MindView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Anything on your mind? (optional)")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(Color(.sRGB, red: 0.5, green: 0.5, blue: 0.5))
+                .foregroundColor(
+                    Color(.sRGB, red: 0.5, green: 0.5, blue: 0.5)
+                )
 
             TextField("Write a note...", text: $note, axis: .vertical)
                 .font(.system(size: 14))
@@ -109,25 +167,28 @@ struct MindView: View {
                 .background(
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
-                        .stroke(Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24), lineWidth: 1)
+                        .stroke(
+                            Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24),
+                            lineWidth: 1
+                        )
                 )
                 .colorScheme(.dark)
+                .disabled(service.isLoading)
         }
     }
 
     // MARK: - Actions
 
     private func submitMood() {
-        guard let mood = selectedMood else { return }
+        guard let mood = selectedMood, !service.isLoading else { return }
 
         // Log mood locally
         profile.addMoodEntry(mood, note: note)
 
-        // Determine action: if recent moods are concerning, ask for analysis
-        let action: String = recentMoodsAreConcerning() ? "mood_analysis" : "mood_checkin"
-
         service.request(
-            message: note.isEmpty ? "I'm feeling \(mood.rawValue)" : note,
+            message: note.isEmpty
+                ? "I'm feeling \(mood.rawValue)"
+                : note,
             pillar: .mind,
             context: profile.contextForServer()
         )
@@ -136,15 +197,9 @@ struct MindView: View {
         selectedMood = nil
         note = ""
     }
-
-    private func recentMoodsAreConcerning() -> Bool {
-        let concerning: Set<Mood> = [.low, .anxious, .sad]
-        let recent = profile.moodHistory.suffix(3)
-        return recent.filter { concerning.contains($0.mood) }.count >= 2
-    }
 }
 
-// MARK: - Shared layout helpers (used by all pillar views)
+// MARK: - Shared layout helpers (unchanged)
 
 func header(_ title: String, icon: String, color: Color) -> some View {
     HStack(spacing: 10) {
@@ -161,15 +216,33 @@ func submitButton(disabled: Bool, action: @escaping () -> Void) -> some View {
     Button(action: action) {
         Text("Send to Bloom")
             .font(.system(size: 15, weight: .semibold))
-            .foregroundColor(disabled ? Color(.sRGB, red: 0.4, green: 0.4, blue: 0.4) : .white)
+            .foregroundColor(
+                disabled
+                    ? Color(.sRGB, red: 0.4, green: 0.4, blue: 0.4)
+                    : .white
+            )
             .frame(maxWidth: .infinity)
             .padding(.vertical, 15)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(disabled
-                        ? Color(red: 0.12, green: 0.12, blue: 0.16)
-                        : Color(red: 0.53, green: 0.81, blue: 0.98))
-                    .shadow(color: disabled ? Color.clear : Color(red: 0.53, green: 0.81, blue: 0.98, opacity: 0.25), radius: 10, x: 0, y: 4)
+                    .fill(
+                        disabled
+                            ? Color(red: 0.12, green: 0.12, blue: 0.16)
+                            : Color(red: 0.53, green: 0.81, blue: 0.98)
+                    )
+                    .shadow(
+                        color: disabled
+                            ? Color.clear
+                            : Color(
+                                red: 0.53,
+                                green: 0.81,
+                                blue: 0.98,
+                                opacity: 0.25
+                            ),
+                        radius: 10,
+                        x: 0,
+                        y: 4
+                    )
             )
     }
     .disabled(disabled)
@@ -178,10 +251,16 @@ func submitButton(disabled: Bool, action: @escaping () -> Void) -> some View {
 func loadingIndicator() -> some View {
     HStack(spacing: 10) {
         ProgressView()
-            .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.53, green: 0.81, blue: 0.98)))
+            .progressViewStyle(
+                CircularProgressViewStyle(
+                    tint: Color(red: 0.53, green: 0.81, blue: 0.98)
+                )
+            )
         Text("Bloom is thinking...")
             .font(.system(size: 14))
-            .foregroundColor(Color(.sRGB, red: 0.55, green: 0.55, blue: 0.55))
+            .foregroundColor(
+                Color(.sRGB, red: 0.55, green: 0.55, blue: 0.55)
+            )
     }
     .frame(maxWidth: .infinity)
     .padding(.vertical, 12)
@@ -193,13 +272,18 @@ func errorBanner(_ message: String) -> some View {
             .foregroundColor(Color(red: 0.94, green: 0.25, blue: 0.37))
         Text(message)
             .font(.system(size: 13))
-            .foregroundColor(Color(.sRGB, red: 0.7, green: 0.7, blue: 0.7))
+            .foregroundColor(
+                Color(.sRGB, red: 0.7, green: 0.7, blue: 0.7)
+            )
     }
     .padding(14)
     .background(
         RoundedRectangle(cornerRadius: 12)
             .fill(Color(red: 0.2, green: 0.08, blue: 0.1))
-            .stroke(Color(red: 0.94, green: 0.25, blue: 0.37, opacity: 0.3), lineWidth: 1)
+            .stroke(
+                Color(red: 0.94, green: 0.25, blue: 0.37, opacity: 0.3),
+                lineWidth: 1
+            )
     )
 }
 

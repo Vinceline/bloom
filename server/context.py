@@ -31,6 +31,11 @@ class BloomContext:
     error: Optional[str] = None             # set if anything fails
     steps_completed: list = field(default_factory=list)  # ["router", "specialist"]
 
+    # ── Temporal memory ──
+    event_history: list = field(default_factory=list)
+    confidence_log: list = field(default_factory=list)
+
+
     # ── Convenience accessors for agents ──
     @property
     def user_role(self) -> str:

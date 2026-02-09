@@ -17,7 +17,7 @@ SETUP:
   3. Run:
          python server.py
 
-  Listens on http://0.0.0.0:5000
+  Listens on http://0.0.0.0:8080
 """
 
 from flask import Flask, request, Response, jsonify
@@ -64,6 +64,6 @@ def bloom():
 
 
 if __name__ == "__main__":
-    print("\n🌸 Bloom agentic server starting...")
-    print("   Endpoint: POST http://0.0.0.0:5000/bloom\n")
+    print("\n🌸 Bloom server starting...")
+    print("   Endpoint: POST http://0.0.0.0:8080/bloom\n")
     app.run(host="0.0.0.0", port=8080, debug=False)

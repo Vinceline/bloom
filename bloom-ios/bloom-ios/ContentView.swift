@@ -3,41 +3,172 @@
 //  bloom-ios
 //
 //  Created by Vinceline Bertrand on 2/1/26.
-//
+
 
 import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var profile: UserProfile
-    @StateObject private var bloomService = BloomService()
-
+    @StateObject private var service = BloomService()
+    
+    @State private var selectedTab = 0
+    
     var body: some View {
-        if !profile.onboardingComplete {
-            OnboardingView()
-        } else {
-            TabView {
-                MindView(service: bloomService)
-                    .tabItem {
-                        Label("Mind", systemImage: "brain.fill")
-                    }
-
-                BodyView(service: bloomService)
-                    .tabItem {
-                        Label("Body", systemImage: "figure.standing")
-                    }
-
-                BabyView(service: bloomService)
-                    .tabItem {
-                        Label("Baby", systemImage: "heart.fill")
-                    }
-
-                PartnerView(service: bloomService)
-                    .tabItem {
-                        Label("Partner", systemImage: "hands.sparkles.fill")
-                    }
+        Group {
+            if !profile.onboardingComplete {
+                OnboardingView()
+            } else {
+                mainInterface
             }
-            .accentColor(Color(red: 0.53, green: 0.81, blue: 0.98))
-            .colorScheme(.dark)
+        }
+    }
+    
+    private var mainInterface: some View {
+        ZStack(alignment: .bottom) {
+            // Content
+            TabView(selection: $selectedTab) {
+                // Mind
+                MindView(service: service)
+                    .tag(0)
+                
+                // Body
+                BodyView(service: service)
+                    .tag(1)
+                
+                // Baby
+                BabyView(service: service)
+                    .tag(2)
+                
+                // Partner (only if role is partner)
+                if profile.role == .partner {
+                    PartnerView(service: service)
+                        .tag(3)
+                }
+                
+                // Insights
+                InsightsView()
+                    .tag(profile.role == .partner ? 4 : 3)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            
+            // Custom tab bar
+            customTabBar
+        }
+        .background(Color.black.ignoresSafeArea())
+    }
+    
+    private var customTabBar: some View {
+        HStack(spacing: 0) {
+            if profile.role == .mom {
+                tabButton(
+                    icon: "brain.fill",
+                    label: "Mind",
+                    color: Color(red: 0.65, green: 0.45, blue: 0.95),
+                    index: 0
+                )
+                
+                tabButton(
+                    icon: "figure.walk",
+                    label: "Body",
+                    color: Color(red: 0.94, green: 0.25, blue: 0.37),
+                    index: 1
+                )
+                
+                tabButton(
+                    icon: "heart.fill",
+                    label: "Baby",
+                    color: Color(red: 0.2, green: 0.7, blue: 0.5),
+                    index: 2
+                )
+                
+                tabButton(
+                    icon: "chart.line.uptrend.xyaxis",
+                    label: "Insights",
+                    color: Color(red: 0.53, green: 0.81, blue: 0.98),
+                    index: 3
+                )
+            } else {
+                tabButton(
+                    icon: "hands.sparkles.fill",
+                    label: "Support",
+                    color: Color(red: 0.22, green: 0.72, blue: 0.96),
+                    index: 3
+                )
+                
+                tabButton(
+                    icon: "heart.fill",
+                    label: "Baby",
+                    color: Color(red: 0.2, green: 0.7, blue: 0.5),
+                    index: 2
+                )
+                
+                tabButton(
+                    icon: "chart.line.uptrend.xyaxis",
+                    label: "Insights",
+                    color: Color(red: 0.53, green: 0.81, blue: 0.98),
+                    index: 4
+                )
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
+                .stroke(
+                    Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24),
+                    lineWidth: 1
+                )
+                .shadow(
+                    color: Color.black.opacity(0.3),
+                    radius: 20,
+                    x: 0,
+                    y: -5
+                )
+        )
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+    }
+    
+    private func tabButton(
+        icon: String,
+        label: String,
+        color: Color,
+        index: Int
+    ) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedTab = index
+            }
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: selectedTab == index ? 20 : 18))
+                    .foregroundColor(
+                        selectedTab == index
+                            ? color
+                            : Color(.sRGB, red: 0.45, green: 0.45, blue: 0.5)
+                    )
+                
+                Text(label)
+                    .font(.system(
+                        size: selectedTab == index ? 11 : 10,
+                        weight: selectedTab == index ? .semibold : .regular
+                    ))
+                    .foregroundColor(
+                        selectedTab == index
+                            ? color
+                            : Color(.sRGB, red: 0.45, green: 0.45, blue: 0.5)
+                    )
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(
+                selectedTab == index
+                    ? RoundedRectangle(cornerRadius: 16)
+                        .fill(color.opacity(0.1))
+                    : nil
+            )
         }
     }
 }

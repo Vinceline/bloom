@@ -76,6 +76,13 @@ def run_pipeline(request_body: dict) -> Generator[str, None, None]:
     router = RouterAgent()
     router.run(context)
 
+    context.event_history.append({
+    "step": "router",
+    "pillar": context.routed_pillar,
+    "action": context.routed_action,
+    "reasoning": context.router_reasoning
+})
+
     if context.error:
         yield _sse_event("error", {"error": context.error})
         return
@@ -107,6 +114,16 @@ def run_pipeline(request_body: dict) -> Generator[str, None, None]:
         context.routed_pillar,
         ("agents.mind_agent", "MindAgent")   # ultimate fallback
     )
+
+    context.event_history.append({
+    "step": "specialist",
+    "pillar": context.routed_pillar,
+    "response_summary": (
+        context.response.get("title")
+        if isinstance(context.response, dict)
+        else None
+    )
+})
 
     try:
         module = importlib.import_module(agent_module_path)

@@ -10,6 +10,8 @@ the task here, gets the agent class, and calls it.
 
 from dataclasses import dataclass
 from typing import Type
+from context import BloomContext
+
 
 
 @dataclass
@@ -180,6 +182,17 @@ _register(Task(
     agent_class="PartnerAgent",
     description="General support and encouragement for the partner"
 ))
+
+def heartbeat(context: BloomContext):
+    """
+    Periodic reevaluation task.
+    Allows Gemini to notice drift even without new input.
+    """
+    from pipeline import run_pipeline
+    run_pipeline({
+        "message": "",
+        "context": context.user_context
+    })
 
 
 def get_task(pillar: str, action: str) -> Task | None:

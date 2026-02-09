@@ -104,7 +104,7 @@ struct OnboardingView: View {
                 .foregroundColor(.white)
                 .padding(.bottom, 8)
 
-            deliveryButton(.vaginal, label: "Vaginal delivery")
+            deliveryButton(.vaginal, label: "Traditional")
             deliveryButton(.cesarean, label: "C-section")
         }
     }

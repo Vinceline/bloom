@@ -50,3 +50,22 @@ def call(contents: list, model: str = MODEL) -> str:
         return response.text
     except Exception as e:
         raise RuntimeError(f"Gemini API error: {e}")
+
+def call_with_confidence(contents: list, model: str = MODEL) -> tuple[str, str]:
+    response = client.models.generate_content(
+        model=model,
+        contents=contents
+    )
+    text = response.text
+
+    confidence_prompt = (
+        "Briefly rate your confidence in this response from 0–1 "
+        "and say what information would change your decision."
+    )
+
+    confidence_resp = client.models.generate_content(
+        model=model,
+        contents=[text, confidence_prompt]
+    )
+
+    return text, confidence_resp.text

@@ -39,7 +39,12 @@ class BodyAgent:
             contents = [context.image, prompt]
 
         try:
-            raw = gemini_client.call(contents)
+            raw, confidence = gemini_client.call_with_confidence(contents)
+            context.confidence_log.append({
+            "agent": "mind",
+            "action": action,
+            "confidence": confidence
+            })
         except RuntimeError as e:
             context.error = str(e)
             return
