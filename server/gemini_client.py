@@ -9,10 +9,11 @@ import os
 import sys
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 
 load_dotenv()
 
-MODEL = "gemini-2.0-flash"
+MODEL = "gemini-3-pro-preview"
 
 
 def get_client() -> genai.Client:
@@ -28,24 +29,34 @@ def get_client() -> genai.Client:
 client = get_client()
 
 
+from google.genai import types
+
 def call(contents: list, model: str = MODEL) -> str:
-    """
-    Make a Gemini API call. Returns the raw text response.
-
-    Args:
-        contents: List of content parts (strings, PIL Images, etc.)
-        model: Model to use. Defaults to the module-level MODEL.
-
-    Returns:
-        The text of Gemini's response.
-
-    Raises:
-        RuntimeError if the API call fails.
-    """
     try:
         response = client.models.generate_content(
             model=model,
-            contents=contents
+            contents=contents,
+            config=types.GenerateContentConfig(
+                safety_settings=[
+                    # Categories MUST have the HARM_CATEGORY_ prefix
+                    types.SafetySetting(
+                        category="HARM_CATEGORY_HATE_SPEECH", 
+                        threshold="BLOCK_NONE"
+                    ),
+                    types.SafetySetting(
+                        category="HARM_CATEGORY_HARASSMENT", 
+                        threshold="BLOCK_NONE"
+                    ),
+                    types.SafetySetting(
+                        category="HARM_CATEGORY_DANGEROUS_CONTENT", 
+                        threshold="BLOCK_NONE"
+                    ),
+                    types.SafetySetting(
+                        category="HARM_CATEGORY_SEXUALLY_EXPLICIT", 
+                        threshold="BLOCK_ONLY_HIGH"
+                    ),
+                ]
+            )
         )
         return response.text
     except Exception as e:

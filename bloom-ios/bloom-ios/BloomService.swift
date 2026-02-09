@@ -114,13 +114,19 @@ class BloomService: ObservableObject {
                 self.routedAction = obj["action"]
 
             case "result":
-                guard let jsonData = data.data(using: .utf8),
-                      let decoded = try? JSONDecoder().decode(BloomResponse.self, from: jsonData)
-                else { return }
+                guard let jsonData = data.data(using: .utf8) else { return }
 
-                self.response = decoded
-                // NOTE: do NOT set isLoading = false here
-                // Stream may continue (heartbeat, follow-ups, etc.)
+                let decoder = JSONDecoder()
+                // This is the magic line that fixes the mismatch:
+                decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+                do {
+                    let decoded = try decoder.decode(BloomResponse.self, from: jsonData)
+                    self.response = decoded
+                    self.isLoading = false
+                } catch {
+                    print("Decoding error: \(error)") // This will show you exactly what field failed
+                }
 
             case "error":
                 guard let jsonData = data.data(using: .utf8),
@@ -147,6 +153,7 @@ private class SSEDelegate: NSObject, URLSessionDataDelegate {
         self.service = service
     }
 
+  
     func urlSession(
         _ session: URLSession,
         dataTask: URLSessionDataTask,
@@ -155,14 +162,11 @@ private class SSEDelegate: NSObject, URLSessionDataDelegate {
         guard let text = String(data: data, encoding: .utf8) else { return }
         buffer += text
 
-        let rawEvents = buffer
-            .components(separatedBy: "\n\n")
-            .flatMap { $0.components(separatedBy: "\r\n\r\n") }
-
-        buffer = rawEvents.last ?? ""
-
-        for event in rawEvents.dropLast() {
-            parseEvent(event)
+        // SSE events are separated by double newlines
+        while let range = buffer.range(of: "\n\n") {
+            let eventString = String(buffer[..<range.upperBound])
+            buffer.removeSubrange(..<range.upperBound) // Remove processed event from buffer
+            parseEvent(eventString)
         }
     }
 
