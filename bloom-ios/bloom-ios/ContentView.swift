@@ -4,6 +4,12 @@
 //
 //  Created by Vinceline Bertrand on 2/1/26.
 
+//
+//  ContentView.swift
+//  bloom-ios
+//
+//  Created by Vinceline Bertrand on 2/8/26.
+//
 
 import SwiftUI
 
@@ -12,10 +18,13 @@ struct ContentView: View {
     @StateObject private var service = BloomService()
     
     @State private var selectedTab = 0
+    @State private var showAppointments = false
     
     var body: some View {
         Group {
-            if !profile.onboardingComplete {
+            if !profile.isLoggedIn {
+                LoginView()
+            } else if !profile.onboardingComplete {
                 OnboardingView()
             } else {
                 mainInterface
@@ -27,34 +36,76 @@ struct ContentView: View {
         ZStack(alignment: .bottom) {
             // Content
             TabView(selection: $selectedTab) {
-                // Mind
-                MindView(service: service)
-                    .tag(0)
-                
-                // Body
-                BodyView(service: service)
-                    .tag(1)
-                
-                // Baby
-                BabyView(service: service)
-                    .tag(2)
-                
-                // Partner (only if role is partner)
-                if profile.role == .partner {
+                if profile.role == .mom {
+                    // Mom's tabs
+                    MindView(service: service)
+                        .tag(0)
+                    
+                    BodyView(service: service)
+                        .tag(1)
+                    
+                    BabyView(service: service)
+                        .tag(2)
+                    
+                    InsightsView()
+                        .tag(3)
+                } else {
+                    // Partner's tabs
+                    MomView()
+                        .tag(0)
+                    
+                    BabyView(service: service)
+                        .tag(1)
+                    
                     PartnerView(service: service)
+                        .tag(2)
+                    
+                    InsightsView()
                         .tag(3)
                 }
-                
-                // Insights
-                InsightsView()
-                    .tag(profile.role == .partner ? 4 : 3)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            
+            // Appointments button (top right)
+            VStack {
+                HStack {
+                    Spacer()
+                    
+                    Button {
+                        showAppointments = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 14))
+                            Text("Visits")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
+                                .stroke(
+                                    Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24),
+                                    lineWidth: 1
+                                )
+                        )
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.top, 16)
+                }
+                
+                Spacer()
+            }
             
             // Custom tab bar
             customTabBar
         }
         .background(Color.black.ignoresSafeArea())
+        .sheet(isPresented: $showAppointments) {
+            AppointmentsView()
+        }
     }
     
     private var customTabBar: some View {
@@ -88,17 +139,25 @@ struct ContentView: View {
                     index: 3
                 )
             } else {
+                // Partner's tabs
                 tabButton(
-                    icon: "hands.sparkles.fill",
-                    label: "Support",
-                    color: Color(red: 0.22, green: 0.72, blue: 0.96),
-                    index: 3
+                    icon: "heart.text.square.fill",
+                    label: "Mom",
+                    color: Color(red: 0.94, green: 0.25, blue: 0.37),
+                    index: 0
                 )
                 
                 tabButton(
                     icon: "heart.fill",
                     label: "Baby",
                     color: Color(red: 0.2, green: 0.7, blue: 0.5),
+                    index: 1
+                )
+                
+                tabButton(
+                    icon: "hands.sparkles.fill",
+                    label: "Support",
+                    color: Color(red: 0.22, green: 0.72, blue: 0.96),
                     index: 2
                 )
                 
@@ -106,7 +165,7 @@ struct ContentView: View {
                     icon: "chart.line.uptrend.xyaxis",
                     label: "Insights",
                     color: Color(red: 0.53, green: 0.81, blue: 0.98),
-                    index: 4
+                    index: 3
                 )
             }
         }

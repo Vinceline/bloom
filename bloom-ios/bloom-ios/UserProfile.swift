@@ -5,7 +5,6 @@
 //  Created by Vinceline Bertrand on 2/8/26.
 //
 
-
 //
 //  UserProfile.swift
 //  bloom-ios
@@ -14,14 +13,15 @@
 //
 
 import Foundation
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - User Profile
 
 class UserProfile: ObservableObject {
     static let shared = UserProfile()
     
+    @Published var isLoggedIn: Bool = false
     @Published var onboardingComplete: Bool = false
     @Published var role: UserRole = .mom
     @Published var deliveryType: DeliveryType = .vaginal
@@ -30,6 +30,8 @@ class UserProfile: ObservableObject {
     @Published var moodHistory: [MoodEntry] = []
     @Published var sleepHistory: [SleepEntry] = []
     @Published var milestones: [Milestone] = []
+    @Published var upcomingAppointments: [Appointment] = []
+    @Published var pastAppointments: [Appointment] = []
     
     var recoveryStage: RecoveryStage {
         let weeks = weeksPostpartum
@@ -71,6 +73,12 @@ class UserProfile: ObservableObject {
         return total / Double(sleepHistory.count)
     }
     
+    var averageSleepHours: Double {
+        guard !sleepHistory.isEmpty else { return 0 }
+        let total = sleepHistory.reduce(0.0) { $0 + $1.hours }
+        return total / Double(sleepHistory.count)
+    }
+    
     func save() {
         // Persist to UserDefaults or elsewhere
         onboardingComplete = true
@@ -82,6 +90,7 @@ class UserProfile: ObservableObject {
         generateMockMoodHistory()
         generateMockSleepHistory()
         generateMockMilestones()
+        generateMockAppointments()
     }
     
     private func generateMockMoodHistory() {
@@ -157,6 +166,58 @@ class UserProfile: ObservableObject {
                 date: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
                 category: .physical,
                 icon: "figure.strengthtraining.traditional"
+            )
+        ].sorted { $0.date > $1.date }
+    }
+    
+    private func generateMockAppointments() {
+        // Upcoming appointments
+        upcomingAppointments = [
+            Appointment(
+                title: "Mom's 6-Week Checkup",
+                type: .postpartumCheckup,
+                date: Calendar.current.date(byAdding: .weekOfYear, value: 3, to: Date())!,
+                time: "10:00 AM",
+                location: "Women's Health Center",
+                provider: "Dr. Sarah Johnson"
+            ),
+            Appointment(
+                title: "\(babyData.babyName)'s 2-Month Checkup",
+                type: .pediatricCheckup,
+                date: Calendar.current.date(byAdding: .weekOfYear, value: 5, to: Date())!,
+                time: "2:30 PM",
+                location: "Pediatric Associates",
+                provider: "Dr. Michael Chen"
+            ),
+            Appointment(
+                title: "Lactation Consultant",
+                type: .lactationConsult,
+                date: Calendar.current.date(byAdding: .day, value: 5, to: Date())!,
+                time: "11:00 AM",
+                location: "Breastfeeding Support Center",
+                provider: "Lisa Martinez, IBCLC"
+            )
+        ].sorted { $0.date < $1.date }
+        
+        // Past appointments
+        pastAppointments = [
+            Appointment(
+                title: "Mom's 2-Week Checkup",
+                type: .postpartumCheckup,
+                date: Calendar.current.date(byAdding: .day, value: -7, to: Date())!,
+                time: "9:00 AM",
+                location: "Women's Health Center",
+                provider: "Dr. Sarah Johnson",
+                notes: "Healing well. Discussed postpartum recovery exercises. Follow up in 4 weeks."
+            ),
+            Appointment(
+                title: "\(babyData.babyName)'s First Checkup",
+                type: .pediatricCheckup,
+                date: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
+                time: "3:00 PM",
+                location: "Pediatric Associates",
+                provider: "Dr. Michael Chen",
+                notes: "Weight: \(babyData.birthWeight) lbs at birth, now \(babyData.currentWeight) lbs. Gaining well. All measurements normal."
             )
         ].sorted { $0.date > $1.date }
     }
@@ -244,6 +305,18 @@ struct BabyData {
     var babyAgeWeeks: Int = 3
     var lastFeedHoursAgo: Double = 2.5
     var currentStatus: String = "sleeping"
+    
+    // Growth stats
+    var birthWeight: Double = 7.2
+    var currentWeight: Double = 8.4
+    var birthLength: Double = 19.5
+    var currentLength: Double = 21.0
+    var weightPercentile: Int = 45
+    var lengthPercentile: Int = 52
+    
+    // Daily tracking
+    var feedsToday: Int = 8
+    var sleepHoursToday: Double = 14.5
 }
 
 struct MoodEntry: Identifiable {
@@ -304,4 +377,63 @@ struct BabyReadout: Codable {
     let likelyState: String
     let confidence: String
     let guidance: String
+}
+
+// MARK: - Appointments
+
+struct Appointment: Identifiable {
+    let id = UUID()
+    let title: String
+    let type: AppointmentType
+    let date: Date
+    let time: String?
+    let location: String?
+    let provider: String?
+    let notes: String?
+    
+    init(
+        title: String,
+        type: AppointmentType,
+        date: Date,
+        time: String? = nil,
+        location: String? = nil,
+        provider: String? = nil,
+        notes: String? = nil
+    ) {
+        self.title = title
+        self.type = type
+        self.date = date
+        self.time = time
+        self.location = location
+        self.provider = provider
+        self.notes = notes
+    }
+}
+
+enum AppointmentType: String {
+    case postpartumCheckup = "Postpartum Checkup"
+    case pediatricCheckup = "Pediatric Checkup"
+    case lactationConsult = "Lactation Consultation"
+    case mentalHealth = "Mental Health"
+    case physicalTherapy = "Physical Therapy"
+    
+    var icon: String {
+        switch self {
+        case .postpartumCheckup: return "heart.text.square.fill"
+        case .pediatricCheckup: return "heart.fill"
+        case .lactationConsult: return "drop.fill"
+        case .mentalHealth: return "brain.fill"
+        case .physicalTherapy: return "figure.walk"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .postpartumCheckup: return Color(red: 0.94, green: 0.25, blue: 0.37)
+        case .pediatricCheckup: return Color(red: 0.2, green: 0.7, blue: 0.5)
+        case .lactationConsult: return Color(red: 0.53, green: 0.81, blue: 0.98)
+        case .mentalHealth: return Color(red: 0.65, green: 0.45, blue: 0.95)
+        case .physicalTherapy: return Color(red: 0.95, green: 0.78, blue: 0.25)
+        }
+    }
 }
