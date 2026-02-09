@@ -104,7 +104,7 @@ struct OnboardingView: View {
                 .foregroundColor(.white)
                 .padding(.bottom, 8)
 
-            deliveryButton(.vaginal, label: "Traditional")
+            deliveryButton(.vaginal, label: "Vaginal delivery")
             deliveryButton(.cesarean, label: "C-section")
         }
     }
@@ -159,8 +159,9 @@ struct OnboardingView: View {
 
             // Continue button
             Button {
-                profile.babyData.babyName = babyName.isEmpty ? "Baby" : babyName
+                profile.babyData.babyName = babyName.isEmpty ? "Baby Leo" : babyName
                 profile.onboardingComplete = true
+                profile.deliveryDate = Date()
                 profile.save()
             } label: {
                 Text("Let's go")

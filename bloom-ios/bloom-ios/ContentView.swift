@@ -2,20 +2,16 @@
 //  ContentView.swift
 //  bloom-ios
 //
-//  Created by Vinceline Bertrand on 2/1/26.
-
-//
-//  ContentView.swift
-//  bloom-ios
-//
 //  Created by Vinceline Bertrand on 2/8/26.
 //
 
 import SwiftUI
+import Combine
 
 struct ContentView: View {
     @EnvironmentObject var profile: UserProfile
     @StateObject private var service = BloomService()
+    @State private var showSettings = false
     
     @State private var selectedTab = 0
     @State private var showAppointments = false
@@ -66,31 +62,52 @@ struct ContentView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             
-            // Appointments button (top right)
+            // Top right buttons (Appointments & Settings)
             VStack {
                 HStack {
                     Spacer()
                     
-                    Button {
-                        showAppointments = true
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 14))
-                            Text("Visits")
-                                .font(.system(size: 13, weight: .medium))
+                    HStack(spacing: 12) {
+                        // Appointments button
+                        Button {
+                            showAppointments = true
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 14))
+                                Text("Visits")
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
+                                    .stroke(
+                                        Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24),
+                                        lineWidth: 1
+                                    )
+                            )
                         }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
-                                .stroke(
-                                    Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24),
-                                    lineWidth: 1
+                        
+                        // Settings button
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.white)
+                                .frame(width: 40, height: 40)
+                                .background(
+                                    Circle()
+                                        .fill(Color(red: 0.08, green: 0.08, blue: 0.12))
+                                        .stroke(
+                                            Color(.sRGB, red: 0.18, green: 0.18, blue: 0.24),
+                                            lineWidth: 1
+                                        )
                                 )
-                        )
+                        }
                     }
                     .padding(.trailing, 20)
                     .padding(.top, 16)
@@ -105,6 +122,9 @@ struct ContentView: View {
         .background(Color.black.ignoresSafeArea())
         .sheet(isPresented: $showAppointments) {
             AppointmentsView()
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
     }
     

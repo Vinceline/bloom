@@ -5,14 +5,6 @@
 //  Created by Vinceline Bertrand on 2/8/26.
 //
 
-
-//
-//  LoginView.swift
-//  bloom-ios
-//
-//  Created by Vinceline Bertrand on 2/8/26.
-//
-
 import SwiftUI
 
 struct LoginView: View {
@@ -20,9 +12,9 @@ struct LoginView: View {
     
     @State private var email = ""
     @State private var password = ""
-    @State private var isSignUp = false
     @State private var showError = false
     @State private var errorMessage = ""
+    @State private var isLoading = false
     
     var body: some View {
         ZStack {
@@ -34,10 +26,11 @@ struct LoginView: View {
                     
                     // Logo
                     VStack(spacing: 12) {
-                        Image("bloom-logo-alpha")
+                        Image(systemName: "leaf.fill")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 120, height: 120)
+                            .frame(width: 80, height: 80)
+                            .foregroundColor(Color(red: 0.53, green: 0.81, blue: 0.98))
                         
                         Text("Bloom")
                             .font(.system(size: 36, weight: .bold, design: .serif))
@@ -58,7 +51,7 @@ struct LoginView: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(Color(.sRGB, red: 0.6, green: 0.6, blue: 0.65))
                             
-                            TextField("your@email.com", text: $email)
+                            TextField("mom@bloom.com or dad@bloom.com", text: $email)
                                 .font(.system(size: 15))
                                 .foregroundColor(.white)
                                 .textContentType(.emailAddress)
@@ -82,10 +75,10 @@ struct LoginView: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(Color(.sRGB, red: 0.6, green: 0.6, blue: 0.65))
                             
-                            SecureField("••••••••", text: $password)
+                            SecureField("password", text: $password)
                                 .font(.system(size: 15))
                                 .foregroundColor(.white)
-                                .textContentType(isSignUp ? .newPassword : .password)
+                                .textContentType(.password)
                                 .padding(14)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
@@ -114,43 +107,49 @@ struct LoginView: View {
                             )
                         }
                         
-                        // Sign In / Sign Up button
+                        // Sign In button
                         Button(action: handleAuth) {
-                            Text(isSignUp ? "Create Account" : "Sign In")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .fill(Color(red: 0.53, green: 0.81, blue: 0.98))
-                                        .shadow(
-                                            color: Color(red: 0.53, green: 0.81, blue: 0.98, opacity: 0.3),
-                                            radius: 12,
-                                            x: 0,
-                                            y: 4
-                                        )
-                                )
+                            HStack {
+                                if isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                } else {
+                                    Text("Sign In")
+                                        .font(.system(size: 16, weight: .semibold))
+                                }
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color(red: 0.53, green: 0.81, blue: 0.98))
+                                    .shadow(
+                                        color: Color(red: 0.53, green: 0.81, blue: 0.98, opacity: 0.3),
+                                        radius: 12,
+                                        x: 0,
+                                        y: 4
+                                    )
+                            )
                         }
-                        .disabled(email.isEmpty || password.isEmpty)
-                        .opacity(email.isEmpty || password.isEmpty ? 0.5 : 1)
+                        .disabled(email.isEmpty || password.isEmpty || isLoading)
+                        .opacity(email.isEmpty || password.isEmpty || isLoading ? 0.5 : 1)
                     }
                     .padding(.horizontal, 20)
                     
-                    // Toggle between sign in and sign up
-                    Button {
-                        withAnimation {
-                            isSignUp.toggle()
-                            showError = false
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(isSignUp ? "Already have an account?" : "Don't have an account?")
-                                .font(.system(size: 14))
-                                .foregroundColor(Color(.sRGB, red: 0.6, green: 0.6, blue: 0.65))
-                            Text(isSignUp ? "Sign In" : "Sign Up")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Color(red: 0.53, green: 0.81, blue: 0.98))
+                    // Demo credentials hint
+                    VStack(spacing: 12) {
+                        Text("Demo Credentials")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(.sRGB, red: 0.5, green: 0.5, blue: 0.55))
+                        
+                        VStack(spacing: 8) {
+                            credentialHint(role: "Mom", email: "mom@bloom.com")
+                            credentialHint(role: "Dad", email: "dad@bloom.com")
+                            
+                            Text("Password: password")
+                                .font(.system(size: 11))
+                                .foregroundColor(Color(.sRGB, red: 0.45, green: 0.45, blue: 0.5))
                         }
                     }
                     
@@ -160,31 +159,59 @@ struct LoginView: View {
         }
     }
     
+    private func credentialHint(role: String, email: String) -> some View {
+        HStack(spacing: 6) {
+            Text(role + ":")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(Color(.sRGB, red: 0.5, green: 0.5, blue: 0.55))
+            
+            Button {
+                self.email = email
+                self.password = "password"
+            } label: {
+                Text(email)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(red: 0.53, green: 0.81, blue: 0.98))
+            }
+        }
+    }
+    
     private func handleAuth() {
-        // Fake authentication - any email/password combo works
-        guard !email.isEmpty, !password.isEmpty else {
+        showError = false
+        
+        // Hardcoded authentication
+        let emailLower = email.lowercased().trimmingCharacters(in: .whitespaces)
+        
+        guard password == "password" else {
             showError = true
-            errorMessage = "Please enter both email and password"
+            errorMessage = "Invalid password"
             return
         }
         
-        // Simple email validation
-        guard email.contains("@") && email.contains(".") else {
-            showError = true
-            errorMessage = "Please enter a valid email address"
-            return
-        }
+        isLoading = true
         
-        // Password length check
-        guard password.count >= 6 else {
-            showError = true
-            errorMessage = "Password must be at least 6 characters"
-            return
-        }
-        
-        // Success - proceed to onboarding
-        withAnimation {
-            profile.isLoggedIn = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            isLoading = false
+            
+            switch emailLower {
+            case "mom@bloom.com":
+                profile.userName = "Sarah"
+                profile.role = .mom
+                profile.isLoggedIn = true
+                profile.onboardingComplete = true
+                profile.loadMomDemoData()
+                
+            case "dad@bloom.com":
+                profile.userName = "Michael"
+                profile.role = .partner
+                profile.isLoggedIn = true
+                profile.onboardingComplete = true
+                profile.loadPartnerDemoData()
+                
+            default:
+                showError = true
+                errorMessage = "Invalid email. Use mom@bloom.com or dad@bloom.com"
+            }
         }
     }
 }
